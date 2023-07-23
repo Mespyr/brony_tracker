@@ -58,5 +58,11 @@ class Client(discord.Client):
                 return
             await message.channel.send(f"```{msg_str}```")
 
+        elif command[0] == "!help":
+            await message.channel.send(f"""```
+!help               - display help message
+!fetch USER CHANNEL - fetch user's messages
+```""")
+
         else:
             await message.channel.send(f"Command `{command[0]}` does not exist.")
