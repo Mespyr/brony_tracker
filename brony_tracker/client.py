@@ -1,9 +1,9 @@
 import discord, json, io
 
 class Client(discord.Client):
-    def __init__(self, data, data_path, *args, **kwargs):
+    def __init__(self, data, datapath, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.data_path = data_path
+        self.datapath = datapath
         self.data = data
 
     async def on_ready(self):
@@ -25,7 +25,7 @@ class Client(discord.Client):
 
         # save new data
         self.data["channels"][channel_name].append([author, date, message_content, attachment_count])
-        with open(self.data_path, "w") as f:
+        with open(self.datapath, "w") as f:
             json.dump(self.data, f, indent = 2)
 
         # if message is not a command, end the function
