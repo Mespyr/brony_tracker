@@ -1,5 +1,10 @@
 import discord, json, io
 
+HELP_MESSAGE = """```
+!help               - display help message
+!fetch USER CHANNEL - fetch user's messages
+```"""
+
 class Client(discord.Client):
     def __init__(self, data, datapath, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -13,24 +18,28 @@ class Client(discord.Client):
         # don't track messages sen't by the bot
         if message.author == self.user: return
 
-        channel_name = f'<#{message.channel.id}>'
-        author = f'<@{message.author.id}>'
+        # get all data
+        channel_id = f'<#{message.channel.id}>'
+        author_id = f'<@{message.author.id}>'
+        message_id = message.id
         message_content = message.content
         date = message.created_at.strftime("%d/%m/%y %H:%M")
         attachment_count = len(message.attachments)
 
         # create new entry if data for channel hasn't been stored yet
-        if channel_name not in self.data["channels"]:
-            self.data["channels"][channel_name] = []
+        if channel_id not in self.data["channels"]:
+            self.data["channels"][channel_id] = []
 
         # save new data
-        self.data["channels"][channel_name].append([author, date, message_content, attachment_count])
+        self.data["channels"][channel_id].append([author_id, message_id, date, message_content, attachment_count])
         with open(self.datapath, "w") as f:
             json.dump(self.data, f, indent = 2)
 
-        # if message is not a command, end the function
-        if not message.content.startswith("!"): return
+        # if message is a command, handle the command 
+        if message.content.startswith("!"):
+            await self.command(message)
 
+    async def command(self, message):
         command = message.content.split()
         if command[0] == "!fetch":
             await self.fetch(command, message)
@@ -38,12 +47,9 @@ class Client(discord.Client):
             await self.help(message)
         else:
             await message.channel.send(f"Command `{command[0]}` does not exist.")
-
+            
     async def help(self, message):
-        await message.channel.send(f"""```
-!help               - display help message
-!fetch USER CHANNEL - fetch user's messages
-```""")
+        await message.channel.send(HELP_MESSAGE)
 
     async def fetch(self, command, message):
         # not enough arguments were passed into command
