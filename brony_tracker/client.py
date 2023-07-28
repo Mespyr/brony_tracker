@@ -14,6 +14,10 @@ class Client(discord.Client):
     async def on_ready(self):
         print(f'Logged on as {self.user}')
 
+    def save_data(self):
+        with open(self.datapath, "w") as f:
+            json.dump(self.data, f, indent = 2)
+
     async def on_message(self, message):
         # don't track messages sen't by the bot
         if message.author == self.user: return
@@ -39,8 +43,7 @@ class Client(discord.Client):
             "attachments": attachment_count,
             "edits": []
         })
-        with open(self.datapath, "w") as f:
-            json.dump(self.data, f, indent = 2)
+        self.save_data()
 
         # if message is a command, handle the command 
         if message.content.startswith("!"):
@@ -54,6 +57,7 @@ class Client(discord.Client):
         for idx in range(len(channel_messages)):
             if channel_messages[idx]["msg_id"] == message_id:
                 self.data["channels"][channel_id][idx]["edits"].append(edited_msg_content)
+                self.save_data()
                 break
             
     async def run_command(self, message):
