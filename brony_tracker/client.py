@@ -31,15 +31,32 @@ class Client(discord.Client):
             self.data["channels"][channel_id] = []
 
         # save new data
-        self.data["channels"][channel_id].append([author_id, message_id, date, message_content, attachment_count])
+        self.data["channels"][channel_id].append({
+            "author": author_id,
+            "msg_id": message_id,
+            "date": date,
+            "content": message_content,
+            "attachments": attachment_count,
+            "edits": []
+        })
         with open(self.datapath, "w") as f:
             json.dump(self.data, f, indent = 2)
 
         # if message is a command, handle the command 
         if message.content.startswith("!"):
-            await self.command(message)
+            await self.run_command(message)
 
-    async def command(self, message):
+    async def on_message_edit(self, before, after):
+        channel_id = f'<#{before.channel.id}>'
+        message_id = before.id
+        edited_msg_content = after.content
+        channel_messages = self.data["channels"][channel_id]
+        for idx in range(len(channel_messages)):
+            if channel_messages[idx]["msg_id"] == message_id:
+                self.data["channels"][channel_id][idx]["edits"].append(edited_msg_content)
+                break
+            
+    async def run_command(self, message):
         command = message.content.split()
         if command[0] == "!fetch":
             await self.fetch(command, message)
@@ -68,8 +85,8 @@ class Client(discord.Client):
         channel_messages = self.data["channels"][channel]
         data_str = ""
         for msg in channel_messages:
-            if msg[0] == user:
-                data_str += f'[{msg[3]} files | {msg[1]}] {msg[2]}\n'
+            if msg["author"] == user:
+                data_str += f'[{msg["attachments"]} files | {msg["date"]}] {msg["content"]}\n'
 
         # if there is nothing found
         if data_str == "":
