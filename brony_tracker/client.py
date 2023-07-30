@@ -2,6 +2,7 @@ import discord, json, io
 
 HELP_MESSAGE = """```
 !help               - display help message
+!purge PURGE_LIMIT  - delete X messages
 !fetch USER CHANNEL - fetch user's messages
 ```"""
 
@@ -17,6 +18,9 @@ class Client(discord.Client):
     def save_data(self):
         with open(self.datapath, "w") as f:
             json.dump(self.data, f, indent = 2)
+
+    def superuser_check(self, author):
+        return author.id == self.data["superuser"]
 
     async def on_message(self, message):
         # don't track messages sen't by the bot
@@ -64,6 +68,8 @@ class Client(discord.Client):
         command = message.content.split()
         if command[0] == "!fetch":
             await self.fetch(command, message)
+        elif command[0] == "!purge":
+            await self.purge(command, message)
         elif command[0] == "!help":
             await self.help(message)
         else:
@@ -72,6 +78,24 @@ class Client(discord.Client):
     async def help(self, message):
         await message.channel.send(HELP_MESSAGE)
 
+    async def purge(self, command, message):
+        if not self.superuser_check(message.author):
+            await message.channel.send(f"You don't have permission to run `{command[0]}`.")
+            return
+        # not enough arguments were passed into the command
+        if len(command) < 2:
+            await message.channel.send(f"Not enough arguments for `{command[0]}`.")
+            return
+
+        # try to grab purge limit
+        try: purge_limit = int(command[1])
+        except:
+            await message.channel.send(f"`{command[1]}` has to be an integer.")
+            return
+
+        # purge content
+        await message.channel.purge(limit = purge_limit)
+        
     async def fetch(self, command, message):
         # not enough arguments were passed into command
         if len(command) < 3:
