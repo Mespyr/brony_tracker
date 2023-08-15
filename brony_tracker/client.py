@@ -114,7 +114,7 @@ class Client(discord.Client):
         data_str = ""
         for msg in channel_messages:
             if msg["author"] == user:
-                data_str += f'[{msg["attachments"]} files | {msg["date"]}] {msg["content"]}\n'
+                data_str = f'[{msg["attachments"]} files | {msg["date"]}] {msg["content"]}\n' + data_str
                 for e in msg["edits"]: data_str += f'EDITED TO: {e}\n'
 
         # if there is nothing found
