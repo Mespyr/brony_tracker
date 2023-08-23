@@ -1,9 +1,10 @@
 import discord, json, io
 
 HELP_MESSAGE = """```
-!help               - display help message
-!purge PURGE_LIMIT  - delete X messages
-!fetch USER CHANNEL - fetch user's messages
+!help                      - display help message
+!purge        LIMIT        - delete X messages
+!fetchuser    USER CHANNEL - fetch user's messages
+!fetchchannel CHANNEL      - fetch messages in a channel
 ```"""
 
 class Client(discord.Client):
@@ -66,8 +67,10 @@ class Client(discord.Client):
             
     async def run_command(self, message):
         command = message.content.split()
-        if command[0] == "!fetch":
-            await self.fetch(command, message)
+        if command[0] == "!fetchuser":
+            await self.fetchuser(command, message)
+        elif command[0] == "!fetchchannel":
+            await self.fetchchannel(command, message);
         elif command[0] == "!purge":
             await self.purge(command, message)
         elif command[0] == "!help":
@@ -96,7 +99,7 @@ class Client(discord.Client):
         # purge content
         await message.channel.purge(limit = purge_limit)
         
-    async def fetch(self, command, message):
+    async def fetchuser(self, command, message):
         # not enough arguments were passed into command
         if len(command) < 3:
             await message.channel.send(f"Not enough arguments for `{command[0]}`.")
@@ -126,3 +129,33 @@ class Client(discord.Client):
         f = discord.File(byte_io, filename = user + channel + ".txt")
         
         await message.channel.send(f"Fetched messages sent in `{channel}` by `{user}`.", file = f)
+
+    async def fetchchannel(self, command, message):
+        # not enough arguments were passed into command
+        if len(command) < 2:
+            await message.channel.send(f"Not enough arguments for `{command[0]}`.")
+            return
+        channel = command[1]
+
+        # if the channel either doesn't exist or doesn't have any messages saved from it yet
+        if channel not in self.data["channels"]:
+            await message.channel.send(f"Channel `{channel}` either doesn't exist or doesn't have any messages saved yet.")
+            return
+
+        # fetch messages
+        channel_messages = self.data["channels"][channel]
+        data_str = ""
+        for msg in channel_messages:
+            data_str = f'[author: {msg["author"]} | {msg["attachments"]} files | {msg["date"]}] {msg["content"]}\n' + data_str
+            for e in msg["edits"]: data_str += f'EDITED TO: {e}\n'
+
+        # if there is nothing found
+        if data_str == "":
+            await message.channel.send(f"No messages sent in `{channel}`")
+            return
+
+        byte_io = io.BytesIO(bytes(data_str, 'utf-8'))
+        f = discord.File(byte_io, filename = channel + ".txt")
+        
+        await message.channel.send(f"Fetched messages sent in `{channel}`.", file = f)
+        
